@@ -4,12 +4,13 @@ const app = express();
 
 // importamos las funciones del archivo mongodb.js
 const { connectToMongoDB, disconnectFromMongoDB } = require('./src/mongodb.js');
-const { ObjectId } = require('mongodb');
+const { ObjectId } = require('mongodb'); 
+const { parse } = require('dotenv');
 
 // configuramos el puerto en el que se va a ejecutar el servidor
 const PORT = process.env.PORT || 3008;
 
-
+app.use(express.json()); // para poder recibir datos en formato JSON segun ChatGPT
 
 
 // ruta principal del servidor
@@ -192,6 +193,153 @@ app.get('/frutas/importe/:importe', async (req, res) => { // esto es lo mismo qu
     await disconnectFromMongoDB(); // desconectarse de la base de datos
     res.status(200).json(frutas); // devolver las frutas
 })
+
+
+
+// .......................................
+// Agregando POST - PUT - DELETE
+
+
+// metodo POST. Sirve para crear frutas
+app.post('/frutas', async (req, res) => { // esto es lo mismo que /frutas
+    const nuevaFruta = req.body; // obtener la fruta de la peticion
+        if (nuevaFruta === undefined) { // si la fruta es undefined. Undefined significa que no se envio ninguna fruta
+            res.status(400). send('Error en el formato de datos a crear.'); // devolver un error
+        }
+    const client = await connectToMongoDB(); // conectarse a la base de datos
+        if (!client) { // si la conexion fallo
+            res.status(500).send('Error a conectarse a MongoDB') // devolver un error
+        }
+
+    const collection = client.db ('frutas').collection('frutas') // seleccionar la coleccion
+        collection.insertOne(nuevaFruta) // insertar la nueva fruta
+        .then(() => { // si se inserto la fruta
+            console.log('Nueva fruta creada: '); // imprimir un mensaje
+            res.status(201).send(nuevaFruta); // devolver la nueva fruta
+        })
+        .catch(error => { // si hubo un error
+            console.error(error); // imprimir el error
+        })
+        .finally(() => { // finalmente
+            client.close(); // cerrar la conexion
+        });
+});
+
+
+
+
+
+
+
+// metodo PUT (update). Sirve para actualizar frutas
+app.put('/frutas/:id', async (req, res) => { // esto es lo mismo que /frutas/:id
+    const id = req.params.id; // obtener el id de la peticion
+    const nuevosDatos = req.body; // obtener la fruta de la peticion
+
+    if (!nuevosDatos) { // si la fruta es undefined. Undefined significa que no se envio ninguna fruta
+        res.status(400). send('Error en el formato de datos recibidos.'); // devolver un error
+    }
+
+    const client = await connectToMongoDB(); // conectarse a la base de datos
+    if (!client) { // si la conexion fallo
+        res.status(500).send('Error a conectarse a MongoDB') // devolver un error
+    }
+
+    const collection = client.db('frutas').collection('frutas'); // seleccionar la coleccion
+    collection.updateOne({ id: parseInt(id) }, { $set: nuevosDatos }) // actualizar la fruta
+    .then(() => { // si se actualizo la fruta
+        console.log('Fruta modificada: '); // imprimir un mensaje
+        res.status(200).send(nuevosDatos); // devolver la fruta actualizada
+    })
+    .catch(error => { // si hubo un error
+        res.status(500).json({ error: 'Error al modificar la fruta' });
+    })
+    .finally(() => { // finalmente
+        client.close(); // cerrar la conexion
+    });
+})
+
+
+
+// metodo DELETE. Sirve para borrar frutas
+app.delete('/frutas/:id', async (req, res) => { // esto es lo mismo que /frutas/:id
+    const id = req.params.id; // obtener el id de la peticion
+
+    if (!req.params.id) { // si no se envio un id
+        return res.status(400).send('El formato de datos es erroneo o invalido'); // devolver un error
+    }
+
+    const client = await connectToMongoDB(); // conectarse a la base de datos
+    if (!client) { // si la conexion fallo
+        return res.status(500).send('Error a conectarse a MongoDB') // devolver un error
+    }
+
+    client.connect() // conectarse a la base de datos
+        .then(() => {
+            const collection = client.db('frutas').collection('frutas'); // seleccionar la coleccion
+            return collection.deleteOne({ id: parseInt(id) }); // borrar la fruta
+        })
+        .then((resultado) => { // si se borro la fruta
+            if (resultado.deletedCount === 0) { // si no se borro la fruta
+                res.status(404).send('No se encontro fruta con el ID proporcionado', id); // devolver un error
+            } else { // si se borro la fruta
+                console.log('Fruta eliminada. '); // imprimir un mensaje
+                res.status(204).send(); // devolver un error
+            }
+        })
+        .catch(error => { // si hubo un error
+            res.status(500).send({ error: 'Se produjo un error al intentar eliminar la fruta' }); // devolver un error
+        })
+        .finally(() => { // finalmente
+            client.close(); // cerrar la conexion
+        });
+});
+
+
+// metodo PATCH. Sirve para actualizar parcialmente frutas
+app.patch('/frutas/:id', async (req, res) => {
+    const id = parseInt(req.params.id); // Convertimos el id recibido a número
+    const camposActualizados = req.body; // Recibimos los campos que queremos modificar
+
+    // Validación básica
+    if (!camposActualizados || Object.keys(camposActualizados).length === 0) { // si no se envio ningun campo
+        return res.status(400).send('No se enviaron campos para actualizar.'); // devolver un error
+    }
+
+    const client = await connectToMongoDB();
+    if (!client) {
+        return res.status(500).send('Error al conectarse a MongoDB');
+    }
+
+    const collection = client.db('frutas').collection('frutas'); // seleccionar la coleccion
+
+    try {
+        const resultado = await collection.updateOne( // actualizar la fruta
+            { id: id }, // Filtro: fruta con ese id
+            { $set: camposActualizados } // Solo actualiza los campos enviados
+        );
+
+        if (resultado.matchedCount === 0) { // si no se encontro la fruta
+            res.status(404).send('Fruta no encontrada');
+        } else {
+            res.status(200).send('Fruta actualizada parcialmente');
+        }
+    } catch (error) {
+        console.error('Error al hacer PATCH:', error);
+        res.status(500).send('Error al actualizar parcialmente la fruta');
+    } finally {
+        client.close();
+    }
+});
+
+
+
+
+
+
+
+
+
 
 
 
