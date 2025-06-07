@@ -22,8 +22,6 @@ app.get('/', (req, res) => {
 
 
 
-
-
 // ruta a /frutas, obtiene todas las frutas
 app.get('/frutas', async (req, res) => {
     const client = await connectToMongoDB();
@@ -61,10 +59,9 @@ app.get('/frutas', async (req, res) => {
 
 
 
-
 // busqueda por id. Busca por el campo id (numero)
 
-app.get('/frutas/id/:id', async (req, res) => {
+app.get('/frutas/id/:id', async (req, res) => { // esto es lo mismo que /frutas/id/14
     const frutaId = parseInt(req.params.id);
     if (isNaN(frutaId)) {
         res.status(400).json({ mensaje: 'ID numérico no válido' });
@@ -155,7 +152,7 @@ app.get('/frutas/_id/:id', async (req, res) => {
 
 
 // Ruta /frutas/nombre/:nombre. Busca frutas cuyo nombre contenga parcial o totalmente el valor informado. Se usa expresion regular
-app.get('/frutas/nombre/:nombre', async (req, res) => { // esto es lo mismo que /frutas/nombre/:nombre
+app.get('/frutas/nombre/:nombre', async (req, res) => { // esto es lo mismo que /frutas/nombre/manzana
 
     const client = await connectToMongoDB(); // conectarse a la base de datos
     if (!client) { // si la conexion fallo
@@ -176,7 +173,7 @@ app.get('/frutas/nombre/:nombre', async (req, res) => { // esto es lo mismo que 
 
 
 // Ruta / frutas/importe/:importe. Busca frutas con importe mayor o igual al indicado
-app.get('/frutas/importe/:importe', async (req, res) => { // esto es lo mismo que /frutas/importe/:importe
+app.get('/frutas/importe/:importe', async (req, res) => { // esto es lo mismo que /frutas/importe/250
 
     const client = await connectToMongoDB(); // conectarse a la base de datos
     if (!client) { // si la conexion fallo
@@ -230,9 +227,8 @@ app.post('/frutas', async (req, res) => { // esto es lo mismo que /frutas
 
 
 
-
 // metodo PUT (update). Sirve para actualizar frutas
-app.put('/frutas/:id', async (req, res) => { // esto es lo mismo que /frutas/:id
+app.put('/frutas/id/:id', async (req, res) => { // esto es lo mismo que /frutas/id/21
     const id = req.params.id; // obtener el id de la peticion
     const nuevosDatos = req.body; // obtener la fruta de la peticion
 
@@ -248,7 +244,7 @@ app.put('/frutas/:id', async (req, res) => { // esto es lo mismo que /frutas/:id
     const collection = client.db('frutas').collection('frutas'); // seleccionar la coleccion
     collection.updateOne({ id: parseInt(id) }, { $set: nuevosDatos }) // actualizar la fruta
     .then(() => { // si se actualizo la fruta
-        console.log('Fruta modificada: '); // imprimir un mensaje
+        console.log('Fruta modificada. '); // imprimir un mensaje
         res.status(200).send(nuevosDatos); // devolver la fruta actualizada
     })
     .catch(error => { // si hubo un error
@@ -262,7 +258,7 @@ app.put('/frutas/:id', async (req, res) => { // esto es lo mismo que /frutas/:id
 
 
 // metodo DELETE. Sirve para borrar frutas
-app.delete('/frutas/:id', async (req, res) => { // esto es lo mismo que /frutas/:id
+app.delete('/frutas/id/:id', async (req, res) => { // esto es lo mismo que /frutas/id/21
     const id = req.params.id; // obtener el id de la peticion
 
     if (!req.params.id) { // si no se envio un id
@@ -283,8 +279,8 @@ app.delete('/frutas/:id', async (req, res) => { // esto es lo mismo que /frutas/
             if (resultado.deletedCount === 0) { // si no se borro la fruta
                 res.status(404).send('No se encontro fruta con el ID proporcionado', id); // devolver un error
             } else { // si se borro la fruta
-                console.log('Fruta eliminada. '); // imprimir un mensaje
-                res.status(204).send(); // devolver un error
+                console.log('Fruta eliminada correctamente. ');
+                res.status(204).send('Fruta eliminada correctamente.'); // devolver un error
             }
         })
         .catch(error => { // si hubo un error
@@ -296,8 +292,10 @@ app.delete('/frutas/:id', async (req, res) => { // esto es lo mismo que /frutas/
 });
 
 
+
+
 // metodo PATCH. Sirve para actualizar parcialmente frutas
-app.patch('/frutas/:id', async (req, res) => {
+app.patch('/frutas/id/:id', async (req, res) => { // es lo mismo que /frutas/id/21
     const id = parseInt(req.params.id); // Convertimos el id recibido a número
     const camposActualizados = req.body; // Recibimos los campos que queremos modificar
 
@@ -331,14 +329,6 @@ app.patch('/frutas/:id', async (req, res) => {
         client.close();
     }
 });
-
-
-
-
-
-
-
-
 
 
 
