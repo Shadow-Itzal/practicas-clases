@@ -280,7 +280,13 @@ app.delete('/frutas/id/:id', async (req, res) => { // esto es lo mismo que /frut
                 res.status(404).send('No se encontro fruta con el ID proporcionado', id); // devolver un error
             } else { // si se borro la fruta
                 console.log('Fruta eliminada correctamente. ');
-                res.status(204).send('Fruta eliminada correctamente.'); // devolver un error
+
+                // ..........
+                // -------    NO ME MUESTRA ESTO
+
+                res.status(204).send('Fruta eliminada correctamente.'); // devolver un error 
+
+                // ........
             }
         })
         .catch(error => { // si hubo un error
